@@ -18,7 +18,7 @@ async function analyzeWithAzure(client, model, contentType, body) {
   let initial = await client
     .path("/documentintelligence/documentModels/{modelId}:analyze", model)
     .post({
-      queryParameters: { "api-version": "2024-07-31", _overload: "analyzeDocument" },
+      queryParameters: { "api-version": "2024-11-30", _overload: "analyzeDocument" },
       contentType,
       body,
     });
