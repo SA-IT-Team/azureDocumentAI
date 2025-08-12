@@ -1,0 +1,17 @@
+{
+  "name": "llmpoc_azuredocai",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module","scripts": { "dev": "vercel dev", "deploy": "vercel --prod" },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@azure-rest/ai-document-intelligence": "^1.1.0",
+    "@azure/core-auth": "^1.10.0",
+    "busboy": "^1.6.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.3.11"
+  }
+}
