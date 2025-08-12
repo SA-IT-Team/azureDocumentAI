@@ -1,4 +1,4 @@
-// api/textEtraction.js
+// api/textExtraction.js
 import createClient from "@azure-rest/ai-document-intelligence";
 import { AzureKeyCredential } from "@azure/core-auth";
 import Busboy from "busboy";
@@ -12,36 +12,50 @@ function setCors(res) {
 }
 
 /** Common analyze helper */
+// Tries v4 path first; if Azure returns 404, falls back to v3.1 path.
 async function analyzeWithAzure(client, model, contentType, body) {
-  const initial = await client
+  // Attempt 1: v4 (Document Intelligence)
+  let initial = await client
     .path("/documentintelligence/documentModels/{modelId}:analyze", model)
     .post({
-      queryParameters: { "api-version": "2024-11-30", _overload: "analyzeDocument" },
+      queryParameters: { "api-version": "2024-07-31", _overload: "analyzeDocument" },
       contentType,
       body,
     });
 
-  if (initial.status !== "202") {
+  // If v4 path isn't available on this resource/region, Azure returns 404 → try v3.1
+  if (initial.status === 404) {
+    initial = await client
+      .path("/formrecognizer/documentModels/{modelId}:analyze", model)
+      .post({
+        queryParameters: { "api-version": "2023-07-31", _overload: "analyzeDocument" },
+        contentType,
+        body,
+      });
+  }
+
+  if (initial.status !== 202) {
     return { ok: false, error: { status: initial.status, details: initial.body } };
   }
 
   const poller = client.getLongRunningPoller(initial);
   const finalResp = await poller.pollUntilDone();
 
-  if (finalResp.status !== "200") {
+  if (finalResp.status !== 200) {
     return { ok: false, error: { status: finalResp.status, details: finalResp.body } };
   }
 
-  const result = finalResp.body?.analyzeResult || {};
+  const r = finalResp.body?.analyzeResult || {};
   return {
     ok: true,
     payload: {
-      text: result.content ?? "",
-      paragraphs: result.paragraphs ?? [],
-      tables: result.tables ?? [],
+      text: r.content ?? "",
+      paragraphs: r.paragraphs ?? [],
+      tables: r.tables ?? [],
     },
   };
 }
+
 
 export default async function handler(req, res) {
   setCors(res);
